@@ -228,11 +228,34 @@
       "yes": {
         "print_output_file": "<<<print_output_file_cmd>>>"
       }
+    },
+
+    "power": {
+      "yes": {
+        "wrapped_ck_benchmark_program": "if [ -n \"`ck list local:experiment:<<<record_uoa_parts->>>-power.client`\" ]; then echo 'Experiment <<<record_uoa_parts->>>-power.client exists, skipping' ; else ck rm --force local:experiment:<<<record_uoa>>>; _cmd=\"$(cat<<'EOF'\n<<<ck_benchmark_program>>> \"@@@{'meta': {'ck_benchmark_program': '<<<ck_benchmark_program>>>'}}\" <<<?print_output_file>>> && <<<_power_log_helper>>>\nEOF\n)\";_cmd=\"$(printf \"%s\\n\" \"$_cmd\" | sed \"s/'/'\\\\\\\\''/g; 1 s/^/'/; $ s/$/'/\" )\"; <<<power_command_args >>> ; fi",
+        "power_command_args": [
+          "ck", "benchmark",
+          "--env.CK_MLPERF_POWER_CLIENT_ADDRESS=<<<power_server_ip>>>",
+          "--env.CK_MLPERF_POWER_CLIENT_PORT=<<<power_server_port>>>",
+          "--env.CK_MLPERF_POWER_CLIENT_LOADGEN_LOGS=\"$(ck find program:<<<program_name>>>)\"/tmp/loadgen_logs",
+          "--env.CK_MLPERF_POWER_CLIENT_WORKLOAD=\\\"\\\"\"$_cmd\"",
+          "--record", "--record_repo=local", "--repetitions=1",
+          "--record_uoa=<<<record_uoa_parts->>>-power.client",
+          "--tags=<<<record_tags,>>>,power.client",
+          "program:mlperf-power-client"
+        ],
+        "_power_log_helper": "mkdir -p \"$CK_MLPERF_POWER_CLIENT_LOADGEN_LOGS\" && cp \"$CK_MLPERF_POWER_CLIENT_LOADGEN_LOGS\"/../mlperf_log_* \"$CK_MLPERF_POWER_CLIENT_LOADGEN_LOGS\"/",
+
+        "record_uoa": "<<<record_uoa_parts->>>-power.workload",
+        "record_tags_inner": "<<<record_tags,>>>,power.workload"
+      },
+      "###": {}
     }
+
   },
   "cmd_template": "<<<shell_wrapped_cmd>>>",
   "defaults": {
-    "ck_benchmark_program": "ck benchmark <<<run_or_benchmark_common>>> --skip_stat_analysis --process_multi_keys --repetitions=<<<repetitions>>> --record --record_repo=local --record_uoa=<<<record_uoa>>> --tags=<<<record_tags,>>>",
+    "ck_benchmark_program": "ck benchmark <<<run_or_benchmark_common>>> --skip_stat_analysis --process_multi_keys --repetitions=<<<repetitions>>> --record --record_repo=local --record_uoa=<<<record_uoa>>> --tags=<<<record_tags_inner>>>",
     "ck_compile_program": "ck compile program:<<<program_name>>> <<<?deps >>>",
     "ck_run_program": "ck run <<<run_or_benchmark_common>>>",
     "dataset_size": "<<<recommended_dataset_size>>>",
@@ -244,7 +267,9 @@
     "edgetpu_tags": "max_14.1_arm64",
     "print_output_file_cmd": "&& cat `ck find program:<<<program_name>>>`/tmp/<<<output_file>>>",
     "record_uoa": "<<<record_uoa_parts->>>",
+    "record_tags_inner": "<<<record_tags,>>>",
     "repetitions": "1",
+    "power_server_port": "4950",
     "run_or_benchmark_common": "program:<<<program_name>>> <<<screen_output>>> <<<?deps >>> <<<?ck_env >>>",
     "screen_output": "--env.CK_SILENT_MODE=YES --skip_print_timers",
     "shell_wrapped_cmd": "<<<wrapped_ck_benchmark_program>>>",

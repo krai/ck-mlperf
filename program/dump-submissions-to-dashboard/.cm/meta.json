@@ -27,7 +27,7 @@
     "default": {
       "ignore_return_code": "no",
       "run_time": {
-        "run_cmd_main": "$<<CK_PYTHON_IPYTHON_BIN_FULL>>$ ..$#dir_sep#$run.py",
+        "run_cmd_main": "$<<CK_PYTHON>>$ ..$#dir_sep#$run.py",
         "run_cmd_out1": "stdout.log",
         "run_cmd_out2": "stderr.log",
         "run_output_files": [

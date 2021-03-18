@@ -301,6 +301,8 @@ def get_data(results_path=results_path, mode='spreadsheet'):
                     category = 'Research, Development, Other'
                 elif system_json['status'] in [ 'Unofficial', 'unofficial' ]:
                     category = 'Unofficial'
+                elif system_json['status'] in [ 'on-premise' ]:
+                    category = 'On Premise'
                 else:
                     raise Exception("Unsupported category '%s' in %s!" % (system_json['status'], system_json_path))
 
@@ -316,7 +318,7 @@ def get_data(results_path=results_path, mode='spreadsheet'):
                 # Accelerator.
                 # Tencent: https://github.com/mlperf/submissions_inference_0_5/issues/285
                 accelerator_name = system_json.get('accelerator_model_name', 'N/A')
-                accelerator_num = int(system_json.get('accelerators_per_node', 0))
+                accelerator_num = int(system_json.get('accelerators_per_node', 0) or 0)
                 accelerator = accelerator_name_to_accelerator.get(accelerator_name, accelerator_name)
 
                 # Software (framework).
@@ -377,25 +379,25 @@ def get_data(results_path=results_path, mode='spreadsheet'):
                     elif system_id == 'T4x20':
                         ff_s = 'x'
                     elif system_id == 'A100':
-                        ff_s = 'x'
+                        ff_m = ff_e = ff_s = ff_d = 'x'
                     elif system_id == 'DGX':
-                        ff_s = 'x'
+                        ff_m = ff_e = ff_s = ff_d = 'x'
                     elif system_id == 'T4x1_TRT':
-                        ff_s = 'x'
+                        ff_m = ff_e = ff_s = ff_d = 'x'
                     elif system_id == 'T4x8_TRT':
-                        ff_s = 'x'
+                        ff_m = ff_e = ff_s = ff_d = 'x'
                     elif system_id == 'T4x20_TRT':
-                        ff_s = 'x'
+                        ff_m = ff_e = ff_s = ff_d = 'x'
                     elif system_id == 'T4x1_TRT_Triton':
-                        ff_s = 'x'
+                        ff_m = ff_e = ff_s = ff_d = 'x'
                     elif system_id == 'T4x8_TRT_Triton':
-                        ff_s = 'x'
+                        ff_m = ff_e = ff_s = ff_d = 'x'
                     elif system_id == 'T4x20_TRT_Triton':
-                        ff_s = 'x'
+                        ff_m = ff_e = ff_s = ff_d = 'x'
                     elif system_id == 'Xavier_NX_TRT':
-                        ff_s = 'x'
+                        ff_m = ff_e = ff_s = ff_d = 'x'
                     elif system_id == 'AGX_Xavier_TRT':
-                        ff_s = 'x'
+                        ff_m = ff_e = ff_s = ff_d = 'x'
                     else:
                         raise Exception("Unsupported NVIDIA system '%s'!" % system_id)
                 elif submitter == 'Qualcomm':
@@ -418,23 +420,33 @@ def get_data(results_path=results_path, mode='spreadsheet'):
                 elif submitter == 'Inspur':
                     ff_s = 'x'
                 elif submitter == 'Atos':
-                    ff_s = 'x'
+                    ff_m = ff_e = ff_s = ff_d = 'x'
                 elif submitter == 'Fujitsu':
-                    ff_s = 'x'
+                    ff_m = ff_e = ff_s = ff_d = 'x'
                 elif submitter == 'IVATech':
-                    ff_s = 'x'
+                    ff_m = ff_e = ff_s = ff_d = 'x'
                 elif submitter == 'Neuchips':
-                    ff_s = 'x'
+                    ff_m = ff_e = ff_s = ff_d = 'x'
                 elif submitter == 'Nettrix':
-                    ff_s = 'x'
+                    ff_m = ff_e = ff_s = ff_d = 'x'
                 elif submitter == 'Altos':
-                    ff_s = 'x'
+                    ff_m = ff_e = ff_s = ff_d = 'x'
                 elif submitter == 'QCT':
-                    ff_s = 'x'
+                    ff_m = ff_e = ff_s = ff_d = 'x'
                 elif submitter == 'Mobilint':
-                    ff_s = 'x'
+                    ff_m = ff_e = ff_s = ff_d = 'x'
                 elif submitter == 'Gigabyte':
-                    ff_s = 'x'
+                    ff_m = ff_e = ff_s = ff_d = 'x'
+                elif submitter == 'Lenovo':
+                    ff_m = ff_e = ff_s = ff_d = 'x'
+                elif submitter == 'Dividiti':
+                    ff_m = ff_e = ff_s = ff_d = 'x'
+                elif submitter == 'Cisco':
+                    ff_m = ff_e = ff_s = ff_d = 'x'
+                elif submitter == 'InAccel':
+                    ff_m = ff_e = ff_s = ff_d = 'x'
+                elif submitter == 'Deci':
+                    ff_m = ff_e = ff_s = ff_d = 'x'
                 else:
                     raise Exception("Unsupported division/submitter combination '%s'/'%s'!" % (division, submitter))
 
@@ -611,15 +623,18 @@ def get_data(results_path=results_path, mode='spreadsheet'):
                                 notes.append(performance_notes)
                                 data[0].update({'Notes' : notes})
                             # Parse performance stats from the summary file.
-                            with open(os.path.join(experiment_dir, 'performance', performance_dir, 'mlperf_log_summary.txt'), 'r') as summary_file:
+                            log_summary_path = os.path.join(experiment_dir, 'performance', performance_dir, 'mlperf_log_summary.txt')
+                            with open(log_summary_path, 'r') as summary_file:
                                 summary_txt = summary_file.readlines()
                                 for line in summary_txt:
                                     if re.match("Scenario", line):
                                         # NB: LoadGen scenario strings have spaces between 'Single'/'Multi' and 'Stream'.
                                         loadgen_scenario = line.split(": ",1)[1].strip()
                                         loadgen_scenario_str = scenario_to_str[loadgen_scenario]
-                                        if loadgen_scenario_str != scenario_str:
-                                            raise Exception("Expected '%s', parsed '%s'!" % (scenario_str, loadgen_scenario_str ))
+                                        # account for SingleStream results copied to Offline and MultiStream, which is a valid case
+                                        # (see https://github.com/mlcommons/inference_policies/pull/168)
+                                        if loadgen_scenario_str != scenario_str and not (loadgen_scenario_str == 'SingleStream' and scenario_str in ['Offline', 'MultiStream']):
+                                           raise Exception("Expected '%s', parsed '%s' from %s" % (scenario_str, loadgen_scenario_str, log_summary_path ))
                                         continue
                                     if scenario_str == "SingleStream":
                                         if re.match("90th percentile latency", line):

@@ -553,6 +553,7 @@ def get_data(results_path=results_path, mode='spreadsheet'):
                                     if results_file_txt:
                                         parsed_results = json.loads(results_file_txt)
                                         accuracy = parsed_results.get(f'TestScenario.{scenario_str}', {}).get('accuracy', 0.0)
+                                        task = 'IC'
                             # if failed, try to load it from accuracy.txt
                             if not accuracy:
                                 accuracy_path = os.path.join(accuracy_dir, 'accuracy.txt')

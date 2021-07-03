@@ -10,7 +10,7 @@
 #### Performance
 
 ```bash
-$ ck run cmdgen:benchmark.image-classification.tflite-loadgen --library=tflite-v2.4.1-ruy \
+$ ck run cmdgen:benchmark.image-classification.tflite-loadgen --library=tflite-v2.5.0-ruy \
 --model=resnet50 --scenario=offline --mode=performance --target_latency=400 \
 --verbose --sut=firefly
 ```
@@ -18,7 +18,7 @@ $ ck run cmdgen:benchmark.image-classification.tflite-loadgen --library=tflite-v
 #### Accuracy
 
 ```bash
-$ ck run cmdgen:benchmark.image-classification.tflite-loadgen --library=tflite-v2.4.1-ruy \
+$ ck run cmdgen:benchmark.image-classification.tflite-loadgen --library=tflite-v2.5.0-ruy \
 --model=resnet50 --scenario=singlestream --mode=accuracy --dataset_size=50000 \
 --verbose --sut=firefly
 ...

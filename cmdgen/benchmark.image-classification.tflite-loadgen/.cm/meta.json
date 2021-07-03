@@ -163,8 +163,8 @@
       "tflite-v2.5.0-ruy": {
 	"deps": "--dep_add_tags.library=tflite,v2.5.0,with.ruy",
         "program_name": "image-classification-tflite-loadgen",
-        "recoerd_tags": [
-	  "inference_engine_tflite",
+        "record_tags": [
+	  "inference_engine.tflite",
           "inference_engine_version.v2.5.0",
           "inference_engine_backend.ruy"
         ]

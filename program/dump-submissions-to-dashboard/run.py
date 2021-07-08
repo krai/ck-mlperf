@@ -17,9 +17,9 @@ from sys import exit
 # In[ ]:
 
 
-import IPython as ip
 import pandas as pd
 import numpy as np
+from pprint import pprint
 
 
 # In[ ]:
@@ -297,12 +297,14 @@ def get_data(results_path=results_path, mode='spreadsheet'):
                     category = 'Available'
                 elif system_json['status'] in [ 'preview', 'Preview' ]:
                     category = 'Preview'
-                elif system_json['status'] in [ 'rdi', 'RDI', 'rdo', 'RDO' ]:
+                elif system_json['status'] in [ 'rdi', 'RDI', 'rdo', 'RDO', 'Research, Development, or Internal' ]:
                     category = 'Research, Development, Other'
                 elif system_json['status'] in [ 'Unofficial', 'unofficial' ]:
                     category = 'Unofficial'
+                elif system_json['status'] in [ 'on-premise' ]:
+                    category = 'On Premise'
                 else:
-                    raise Exception("Unsupported category '%s'!" % (system_json['status']))
+                    raise Exception("Unsupported category '%s' in %s!" % (system_json['status'], system_json_path))
 
                 # System details.
                 system_name = system_json['system_name']
@@ -316,7 +318,7 @@ def get_data(results_path=results_path, mode='spreadsheet'):
                 # Accelerator.
                 # Tencent: https://github.com/mlperf/submissions_inference_0_5/issues/285
                 accelerator_name = system_json.get('accelerator_model_name', 'N/A')
-                accelerator_num = int(system_json.get('accelerators_per_node', 0))
+                accelerator_num = int(system_json.get('accelerators_per_node', 0) or 0)
                 accelerator = accelerator_name_to_accelerator.get(accelerator_name, accelerator_name)
 
                 # Software (framework).
@@ -376,6 +378,26 @@ def get_data(results_path=results_path, mode='spreadsheet'):
                         ff_e = ff_s = 'x'
                     elif system_id == 'T4x20':
                         ff_s = 'x'
+                    elif system_id == 'A100':
+                        ff_m = ff_e = ff_s = ff_d = 'x'
+                    elif system_id == 'DGX':
+                        ff_m = ff_e = ff_s = ff_d = 'x'
+                    elif system_id == 'T4x1_TRT':
+                        ff_m = ff_e = ff_s = ff_d = 'x'
+                    elif system_id == 'T4x8_TRT':
+                        ff_m = ff_e = ff_s = ff_d = 'x'
+                    elif system_id == 'T4x20_TRT':
+                        ff_m = ff_e = ff_s = ff_d = 'x'
+                    elif system_id == 'T4x1_TRT_Triton':
+                        ff_m = ff_e = ff_s = ff_d = 'x'
+                    elif system_id == 'T4x8_TRT_Triton':
+                        ff_m = ff_e = ff_s = ff_d = 'x'
+                    elif system_id == 'T4x20_TRT_Triton':
+                        ff_m = ff_e = ff_s = ff_d = 'x'
+                    elif system_id == 'Xavier_NX_TRT':
+                        ff_m = ff_e = ff_s = ff_d = 'x'
+                    elif system_id == 'AGX_Xavier_TRT':
+                        ff_m = ff_e = ff_s = ff_d = 'x'
                     else:
                         raise Exception("Unsupported NVIDIA system '%s'!" % system_id)
                 elif submitter == 'Qualcomm':
@@ -397,6 +419,34 @@ def get_data(results_path=results_path, mode='spreadsheet'):
                 # Open only.
                 elif submitter == 'Inspur':
                     ff_s = 'x'
+                elif submitter == 'Atos':
+                    ff_m = ff_e = ff_s = ff_d = 'x'
+                elif submitter == 'Fujitsu':
+                    ff_m = ff_e = ff_s = ff_d = 'x'
+                elif submitter == 'IVATech':
+                    ff_m = ff_e = ff_s = ff_d = 'x'
+                elif submitter == 'Neuchips':
+                    ff_m = ff_e = ff_s = ff_d = 'x'
+                elif submitter == 'Nettrix':
+                    ff_m = ff_e = ff_s = ff_d = 'x'
+                elif submitter == 'Altos':
+                    ff_m = ff_e = ff_s = ff_d = 'x'
+                elif submitter == 'QCT':
+                    ff_m = ff_e = ff_s = ff_d = 'x'
+                elif submitter == 'Mobilint':
+                    ff_m = ff_e = ff_s = ff_d = 'x'
+                elif submitter == 'Gigabyte':
+                    ff_m = ff_e = ff_s = ff_d = 'x'
+                elif submitter == 'Lenovo':
+                    ff_m = ff_e = ff_s = ff_d = 'x'
+                elif submitter == 'Dividiti':
+                    ff_m = ff_e = ff_s = ff_d = 'x'
+                elif submitter == 'Cisco':
+                    ff_m = ff_e = ff_s = ff_d = 'x'
+                elif submitter == 'InAccel':
+                    ff_m = ff_e = ff_s = ff_d = 'x'
+                elif submitter == 'Deci':
+                    ff_m = ff_e = ff_s = ff_d = 'x'
                 else:
                     raise Exception("Unsupported division/submitter combination '%s'/'%s'!" % (division, submitter))
 
@@ -488,32 +538,69 @@ def get_data(results_path=results_path, mode='spreadsheet'):
                         experiment_dir = os.path.join(benchmark_dir, scenario)
 
                         # Extract accuracy.
+                        accuracy = 0.0
                         if submitter == 'Hailo' and benchmark == 'ssd-small':
                             # https://github.com/mlperf/submissions_inference_0_5/issues/287
                             task = 'OD'
                             accuracy = 21.920 # ssd-small/SingleStream/accuracy/results.json
                         else:
                             accuracy_dir = os.path.join(experiment_dir, 'accuracy')
-                            with open(os.path.join(accuracy_dir, 'accuracy.txt'), 'r') as accuracy_file:
-                                accuracy_txt = accuracy_file.readlines()
-                                accuracy_line = accuracy_txt[-1]
-                            if accuracy_line.startswith('mAP'):
-                                task = 'OD'
-                                match = re.match('mAP\=([\d\.]+)\%', accuracy_line)
-                                accuracy = float(match.group(1))
-                            elif accuracy_line.startswith('accuracy'):
-                                task = 'IC'
-                                match = re.match('accuracy=(.+)%, good=(\d+), total=(\d+)', accuracy_line)
-                                accuracy = float(match.group(1))
-                            elif accuracy_line.startswith('BLEU'):
-                                task = 'MT'
-                                match = re.match('BLEU:\s*(.+)', accuracy_line)
-                                accuracy = float(match.group(1))
-                            else:
-                                pprint(accuracy_txt)
-                                raise Exception('Failed to extract accuracy information from "%s"' % accuracy_line)
+                            # try to load accuracy from results.json first
+                            results_json_path = os.path.join(accuracy_dir, 'results.json')
+                            if os.path.exists(results_json_path):
+                                with open(results_json_path, 'r') as results_file:
+                                    results_file_txt = results_file.read().strip()
+                                    if results_file_txt:
+                                        parsed_results = json.loads(results_file_txt)
+                                        accuracy = parsed_results.get(f'TestScenario.{scenario_str}', {}).get('accuracy', 0.0)
+                                        task = 'IC'
+                            # if failed, try to load it from accuracy.txt
+                            if not accuracy:
+                                accuracy_path = os.path.join(accuracy_dir, 'accuracy.txt')
+                                with open(accuracy_path, 'r') as accuracy_file:
+                                    accuracy_txt = accuracy_file.readlines()
+                                    accuracy_line = ''
+                                    for line in accuracy_txt:
+                                        for prefix in ['mAP', 'accuracy', 'BLEU', 'Accuracy', '{"exact_match"', 'Word Error Rate', 'AUC']:
+                                            if line.startswith(prefix):
+                                                accuracy_line = line
+                                                break
+                                        if accuracy_line:
+                                            break
+                                if accuracy_line.startswith('mAP'):
+                                    task = 'OD'
+                                    match = re.match('mAP\=([\d\.]+)\%', accuracy_line)
+                                    accuracy = float(match.group(1))
+                                elif accuracy_line.startswith('accuracy'):
+                                    task = 'IC'
+                                    match = re.match('accuracy=(.+)%, good=(\d+), total=(\d+)', accuracy_line)
+                                    accuracy = float(match.group(1))
+                                elif accuracy_line.startswith('Accuracy'):
+                                    task = 'IC'
+                                    match = re.match('Accuracy: mean = (.+), whole tumor = (.+), tumor core = (.+), ', accuracy_line)
+                                    accuracy = 100.0 * float(match.group(1))
+                                elif accuracy_line.startswith('{"exact_match"'):
+                                    task = 'IC'
+                                    parsed_line = json.loads(accuracy_line)
+                                    accuracy = float(parsed_line['f1'])
+                                elif accuracy_line.startswith('Word Error Rate'):
+                                    task = 'IC'
+                                    match = re.match('Word Error Rate: .+%, accuracy=(.+)%', accuracy_line)
+                                    accuracy = float(match.group(1))
+                                elif accuracy_line.startswith('AUC'):
+                                    task = 'IC'
+                                    match = re.match('AUC=.+%, accuracy=(.+)%, good=.+, total=.+, ', accuracy_line)
+                                    accuracy = float(match.group(1))
+                                elif accuracy_line.startswith('BLEU'):
+                                    task = 'MT'
+                                    match = re.match('BLEU:\s*(.+)', accuracy_line)
+                                    accuracy = float(match.group(1))
+                                else:
+                                    pprint(accuracy_txt)
+                                    raise Exception('Failed to extract accuracy information from "%s"' % accuracy_path)
                         data[0]['Task'] = { 'IC': 'Image Classification', 'OD': 'Object Detection', 'MT': 'Machine Translation' }.get(task)
                         data[0]['Scenario'] = scenario_to_str.get(scenario, scenario)
+                  
                         if submitter == 'Tencent' and scenario_str in [ 'SingleStream', 'Offline' ]:
                             # https://github.com/mlperf/submissions_inference_0_5/issues/286
                             performance_dirs = [ os.path.join(experiment_dir, 'performance') ]
@@ -539,15 +626,18 @@ def get_data(results_path=results_path, mode='spreadsheet'):
                                 notes.append(performance_notes)
                                 data[0].update({'Notes' : notes})
                             # Parse performance stats from the summary file.
-                            with open(os.path.join(experiment_dir, 'performance', performance_dir, 'mlperf_log_summary.txt'), 'r') as summary_file:
+                            log_summary_path = os.path.join(experiment_dir, 'performance', performance_dir, 'mlperf_log_summary.txt')
+                            with open(log_summary_path, 'r') as summary_file:
                                 summary_txt = summary_file.readlines()
                                 for line in summary_txt:
                                     if re.match("Scenario", line):
                                         # NB: LoadGen scenario strings have spaces between 'Single'/'Multi' and 'Stream'.
                                         loadgen_scenario = line.split(": ",1)[1].strip()
                                         loadgen_scenario_str = scenario_to_str[loadgen_scenario]
-                                        if loadgen_scenario_str != scenario_str:
-                                            raise Exception("Expected '%s', parsed '%s'!" % (scenario_str, loadgen_scenario_str ))
+                                        # account for SingleStream results copied to Offline and MultiStream, which is a valid case
+                                        # (see https://github.com/mlcommons/inference_policies/pull/168)
+                                        if loadgen_scenario_str != scenario_str and not (loadgen_scenario_str == 'SingleStream' and scenario_str in ['Offline', 'MultiStream']):
+                                           raise Exception("Expected '%s', parsed '%s' from %s" % (scenario_str, loadgen_scenario_str, log_summary_path ))
                                         continue
                                     if scenario_str == "SingleStream":
                                         if re.match("90th percentile latency", line):
